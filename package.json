@@ -1,0 +1,26 @@
+{
+  "name": "rexpaintjs-render",
+  "version": "0.2.3",
+  "description": "Export rexpaint.js images to bitmap images using Jimp",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adri326/rexpaintjs-render.git"
+  },
+  "keywords": [
+    "rexpaint"
+  ],
+  "author": "Shad Amethyst",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/adri326/rexpaintjs-render/issues"
+  },
+  "homepage": "https://github.com/adri326/rexpaintjs-render#readme",
+  "dependencies": {
+    "jimp": "^0.16.1",
+    "rexpaintjs-fork": "github:adri326/rexpaintjs-fork"
+  }
+}
