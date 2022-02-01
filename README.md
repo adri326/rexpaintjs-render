@@ -1,6 +1,6 @@
 # rexpaintjs-render
 
-Renders [rexpaintjs-fork Images](https://github.com/adri326/rexpaintjs-fork) into [Jimp](https://www.npmjs.com/package/jimp) images.
+Renders [rexpaintjs-fork Images](https://github.com/adri326/rexpaintjs-fork) into [canvas](https://www.npmjs.com/package/canvas) images.
 
 ## Installation
 
@@ -16,7 +16,7 @@ Then, import the node module:
 const render = require('rexpaintjs-render');
 ```
 
-You can then quickly convert your `Image`s into `Jimp` instances with the imported `render` method:
+You can then quickly convert your `Image`s into `Image` instances with the imported `render` method:
 
 ```js
 const fs = require("fs");

@@ -1,7 +1,7 @@
 {
   "name": "rexpaintjs-render",
-  "version": "0.2.3",
-  "description": "Export rexpaint.js images to bitmap images using Jimp",
+  "version": "0.3.0",
+  "description": "Export rexpaint.js images to bitmap images using canvas",
   "main": "index.js",
   "scripts": {
     "test": "node test.js"
@@ -20,7 +20,10 @@
   },
   "homepage": "https://github.com/adri326/rexpaintjs-render#readme",
   "dependencies": {
-    "jimp": "^0.16.1",
+    "canvas": "^2.9.0",
     "rexpaintjs-fork": "github:adri326/rexpaintjs-fork"
+  },
+  "devDependencies": {
+    "jimp": "^0.16.1"
   }
 }
