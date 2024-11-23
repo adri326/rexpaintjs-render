@@ -204,7 +204,7 @@ const render_image = module.exports.render_image = async function render_image(i
   for (let y = 0; y < merged.height; y++) {
     for (let x = 0; x < merged.width; x++) {
       let pixel = merged.get(x, y);
-      if (!pixel.transparent) render_pixel(ctx, font, x, y, pixel);
+      if (!pixel?.transparent) render_pixel(ctx, font, x, y, pixel);
     }
   }
 
