@@ -1,6 +1,6 @@
 {
   "name": "rexpaintjs-render",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Export rexpaint.js images to bitmap images using canvas",
   "main": "index.js",
   "scripts": {
@@ -20,10 +20,12 @@
   },
   "homepage": "https://github.com/adri326/rexpaintjs-render#readme",
   "dependencies": {
-    "canvas": "^2.9.0",
-    "rexpaintjs-fork": "github:adri326/rexpaintjs-fork"
+    "@napi-rs/canvas": "^0.1.63",
+    "rexpaintjs-fork": "github:adri326/rexpaintjs-fork",
+    "typescript": "^5.7.2"
   },
   "devDependencies": {
+    "@types/node": "^22.9.3",
     "jimp": "^0.16.1"
   }
 }

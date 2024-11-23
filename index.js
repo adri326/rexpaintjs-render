@@ -1,7 +1,9 @@
+//@ts-check
+
 const rexpaint = require("rexpaintjs-fork");
-const crypto = require("crypto");
-const fs = require("fs");
-const {createCanvas, loadImage} = require("canvas");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const {createCanvas, loadImage} = require("@napi-rs/canvas");
 
 const ROW_SIZE = 16;
 const N_ROWS = 16; // used for font import
@@ -14,16 +16,40 @@ module.exports.background_color = 0x0; // RGBA
 
 module.exports.OUTPUT_URI = module.exports.OUTPUT_URI_PNG = Symbol("OUTPUT_URI_PNG");
 module.exports.OUTPUT_URI_JPEG = Symbol("OUTPUT_URI_JPEG");
-module.exports.OUTPUT_URI_BMP = Symbol("OUTPUT_URI_BMP");
 
 /**
+ * @typedef {Object} RenderOptions
+ * @property {string | symbol | null | undefined} [output]
+ * @property {string} [background] Color to use as background.
+ * @property {import("rexpaintjs-fork").LayerOption} [layers] Which layers to render.
+ */
+
+/**
+ * @overload
+ * @param {string | import("rexpaintjs-fork").Image} image
+ * @param {RenderOptions & {output: symbol}} options
+ * @returns {Promise<Buffer>}
+ */
+/**
+ * @overload
+ * @param {string | import("rexpaintjs-fork").Image} image
+ * @param {RenderOptions & {output?: string}} options
+ * @returns {Promise<import("@napi-rs/canvas").Canvas>}
+ */
+/**
   Main function: call it with either an Image instance or a path to a rexpaint .XP file.
+
+  @overload
+  @param {string | import("rexpaintjs-fork").Image} image
+  @param {RenderOptions} [options]
+  @returns {Promise<Buffer | import("@napi-rs/canvas").Canvas>}
 **/
-const render = module.exports = function render(image, options = {}) {
+module.exports = function render(image, options = {}) {
   if (typeof image === "string") {
     return new Promise((resolve, reject) => {
       fs.readFile(image, (err, buffer) => {
-        if (err) reject(err);
+        if (err) return reject(err);
+
         rexpaint(buffer).then(data => {
           render(data, options).then(resolve).catch(reject);
         }).catch(reject);
@@ -31,6 +57,7 @@ const render = module.exports = function render(image, options = {}) {
     });
   }
 
+  /** @type {RenderOptions} */
   options = {
     output: null,
     background: "transparent",
@@ -41,62 +68,50 @@ const render = module.exports = function render(image, options = {}) {
   return new Promise(async (resolve, reject) => {
     let res = await render_image(image, options);
     if (typeof options.output === "string") {
-      let stream = res.createPNGStream();
-      let out = fs.createWriteStream(options.output);
-      stream.pipe(out);
-      out.on("error", (err) => {
-        reject(err);
-      });
-      out.on("finish", () => {
-        resolve(res);
+      let stream = await res.encode("png");
+      fs.writeFile(options.output, stream, (err) => {
+        if (err) reject(err);
+        else resolve(res);
       });
     } else if (options.output === module.exports.OUTPUT_URI_PNG) {
-      res.toDataURL("image/png", (err, data) => {
-        if (err) reject(err);
-        resolve(data);
-      });
+      return res.toDataURLAsync("image/png");
     } else if (options.output === module.exports.OUTPUT_URI_JPEG) {
-      res.toDataURL("image/jpeg", (err, data) => {
-        if (err) reject(err);
-        resolve(data);
-      });
-    } else if (options.output === module.exports.OUTPUT_URI_BMP) {
-      res.toDataURL("image/bmp", (err, data) => {
-        if (err) reject(err);
-        resolve(data);
-      });
+      return res.toDataURLAsync("image/jpeg");
     } else {
       resolve(res);
     }
   });
 }
 
-/**
-  Calls rexpaintjs-render's rexpaint() function with the current Image instance
-**/
-rexpaint.Image.prototype.render = function render(options = {}) {
-  return module.exports(this, options);
-}
-
 module.exports.font = null;
 let font_queue = [];
 
 /**
-  Loads a font as a Image, necessary to render any rexpaint image
+ * @overload
+ * @param {String} path
+ */
+/**
+ * Loads a font as a Image, necessary to render any rexpaint image
+
+ * @overload
+ * @param {String} path
+ * @param {number} char_width
+ * @param {number} char_height
+ * @returns {Promise<void>}
 **/
-module.exports.load_font = function load_font(path, char_width = null, char_height = null) {
+module.exports.load_font = function load_font(path, char_width = -1, char_height = -1) {
   return new Promise((resolve, reject) => {
     if (module.exports.font) {
       resolve(module.exports.font);
     } else {
       loadImage(path).then((img) => {
-        if (char_width === null || char_height === null) {
+        if (char_width === -1 || char_width === null || char_height === -1 || char_height === null) {
           char_width = img.width / ROW_SIZE;
           char_height = img.height / N_ROWS;
         }
         let grid = new Array(256).fill(null).map((_, i) => {
-          x = i % 16;
-          y = Math.floor(i / 16);
+          let x = i % 16;
+          let y = Math.floor(i / 16);
 
           let canvas = createCanvas(char_width, char_height);
           let ctx = canvas.getContext("2d");
@@ -116,7 +131,8 @@ module.exports.load_font = function load_font(path, char_width = null, char_heig
 
           ctx.putImageData(data, 0, 0);
 
-          return [canvas, ctx.createPattern(canvas)];
+          // @ts-ignore
+          return [canvas, ctx.createPattern(canvas, null)];
         });
         module.exports.font = {img, grid, char_width, char_height};
 
@@ -156,15 +172,25 @@ function render_pixel(ctx, font, x, y, pixel) {
 }
 
 /**
-  Renders a rexpaint Image into a Image; this operation is quite slow (as it is done in Javascript),
+ * @typedef {Object} RenderImageOptions
+ * @property {string} [background] Color to use as background.
+ * @property {import("rexpaintjs-fork").LayerOption} [layers] Which layers to render.
+ */
+
+/**
+  Renders a rexpaint Image into a Image; this operation can be quite slow,
   so you should cache the results as much as you can!
+
+  @param {import("rexpaintjs-fork").Image} image
+  @param {RenderImageOptions} options
+  @returns {Promise<import("@napi-rs/canvas").Canvas>}
 **/
 const render_image = module.exports.render_image = async function render_image(image, options = {}) {
-  let background = options.background ?? 0x0;
+  let background = options.background ?? "black";
   let layers = options.layers ?? "all";
 
   let font = await get_font();
-  let res = await canvas(image.width * font.char_width, image.height * font.char_height, background);
+  let res = await canvas(image.width * font.char_width, image.height * font.char_height);
   let ctx = res.getContext("2d");
 
   if (background !== "transparent") {
@@ -173,6 +199,8 @@ const render_image = module.exports.render_image = async function render_image(i
   }
 
   let merged = image.mergeLayers(layers);
+  if (!merged) return res;
+
   for (let y = 0; y < merged.height; y++) {
     for (let x = 0; x < merged.width; x++) {
       let pixel = merged.get(x, y);
@@ -200,7 +228,7 @@ function get_font() {
 /**
   Wrapper around `createCanvas` to return a Promise instead
 **/
-function canvas(width, height, background = 0) {
+function canvas(width, height) {
   return new Promise((resolve, reject) => {
     resolve(createCanvas(width, height));
   });
