@@ -131,8 +131,7 @@ module.exports.load_font = function load_font(path, char_width = -1, char_height
 
           ctx.putImageData(data, 0, 0);
 
-          // @ts-ignore
-          return [canvas, ctx.createPattern(canvas, null)];
+          return canvas;
         });
         module.exports.font = {img, grid, char_width, char_height};
 
@@ -154,7 +153,7 @@ function render_pixel(ctx, font, x, y, pixel) {
   let fg = `rgb(${pixel.fg.r}, ${pixel.fg.g}, ${pixel.fg.b})`;
   let bg = `rgba(${pixel.bg.r}, ${pixel.bg.g}, ${pixel.bg.b}, ${pixel.transparent ? 0 : 1})`;
 
-  let [glyph_canvas, glyph_pattern] = font.grid[pixel.asciiCode % 256];
+  let glyph_canvas = font.grid[pixel.asciiCode % 256];
 
   let sx = x * font.char_width;
   let sy = y * font.char_height;
@@ -164,8 +163,7 @@ function render_pixel(ctx, font, x, y, pixel) {
   ctx.fillStyle = bg;
   ctx.fillRect(sx, sy, font.char_width, font.char_height);
   ctx.globalCompositeOperation = "destination-out";
-  ctx.fillStyle = glyph_pattern;
-  ctx.fillRect(sx, sy, font.char_width, font.char_height);
+  ctx.drawImage(glyph_canvas, 0, 0, font.char_width, font.char_height, sx, sy, font.char_width, font.char_height);
   ctx.globalCompositeOperation = "destination-over";
   ctx.fillStyle = fg;
   ctx.fillRect(sx, sy, font.char_width, font.char_height);

@@ -1,6 +1,6 @@
 {
   "name": "rexpaintjs-render",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Export rexpaint.js images to bitmap images using canvas",
   "main": "index.js",
   "scripts": {
